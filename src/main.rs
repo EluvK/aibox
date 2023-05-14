@@ -1,6 +1,8 @@
 #![feature(async_fn_in_trait)]
 #![allow(non_snake_case)]
 
+use std::rc::Rc;
+
 use dioxus::prelude::*;
 use dioxus_desktop::{
     tao::menu::{MenuBar, MenuItem},
@@ -9,7 +11,10 @@ use dioxus_desktop::{
 // use dioxus_router::{Link, Route, Router};
 
 mod components;
+mod config;
 mod gpt;
+
+use gpt::Openaigpt;
 
 fn main() {
     hot_reload_init!();
@@ -119,8 +124,12 @@ fn Chat(cx: Scope) -> Element {
         current_id: 0,
         next_id: 1,
     };
+    // load config from files.
+    let config = config::Config::read_from_file();
+    let gpt = Openaigpt::new(Rc::new(config));
     use_shared_state_provider(cx, || dialogs);
     use_shared_state_provider(cx, || ids);
+    use_shared_state_provider(cx, || gpt);
 
     cx.render(rsx! {
         div {

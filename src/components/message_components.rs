@@ -1,4 +1,4 @@
-use crate::components::ChatQuerier;
+use crate::{components::ChatQuerier, gpt::Openaigpt};
 
 use super::{ChatContext, ChatContextID, ChatMessage, RenderMessageProp, Role};
 use dioxus::{
@@ -60,6 +60,7 @@ fn RenderMessage(cx: Scope<RenderMessageProp>) -> Element {
 pub fn Input(cx: Scope) -> Element {
     let dialogs = use_shared_state::<Vec<ChatContext>>(cx).unwrap();
     let ids = use_shared_state::<ChatContextID>(cx).unwrap();
+    let gpt = use_shared_state::<Openaigpt>(cx).unwrap();
     let current_id = ids.read().current_id;
     if current_id == 0 {
         return None;
@@ -69,15 +70,23 @@ pub fn Input(cx: Scope) -> Element {
 
     println!("{:?}", user_input_contents);
 
-    let send_message_future = use_future(cx, (dialogs,), |(dialogs,)| async move {
-        let binding = dialogs.read();
-        let current_dialog = binding.iter().find(|dialog| dialog.id == current_id);
+    let send_message_future = use_future(cx, (dialogs, gpt), |(dialogs, gpt)| async move {
+        let current_dialog = dialogs
+            .read()
+            .iter()
+            .find(|dialog| dialog.id == current_id)
+            .cloned();
+        let gpt = gpt.read();
 
         if let Some(dialog) = current_dialog {
             if dialog.Message.is_empty() {
                 return;
             }
-            let response_message = crate::gpt::Openaigpt::query(dialog).await; // todo add type choice
+            if dialog.Message.last().unwrap().user != Role::User {
+                return;
+            }
+
+            let response_message = gpt.query(&dialog).await; // todo add type choice
             println!("response_message: {:#?}", response_message);
             let mut binding = dialogs.write();
             let current_dialog = binding

@@ -11,7 +11,7 @@ use crate::gpt::Role;
 pub struct ChatContext {
     pub id: i32,
     pub name: String,
-    Message: Vec<ChatMessage>,
+    pub Message: Vec<ChatMessage>,
     // todo add role,
 }
 
@@ -38,5 +38,5 @@ pub struct RenderMessageProp {
 }
 
 pub trait ChatQuerier {
-    async fn query(chatcontext: &ChatContext) -> ChatMessage;
+    async fn query(&self, chatcontext: &ChatContext) -> ChatMessage;
 }
